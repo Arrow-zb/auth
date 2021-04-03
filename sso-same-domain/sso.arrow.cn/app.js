@@ -64,6 +64,24 @@ router.post('/login', (ctx, next) => {
   }
 });
 
+router.post('/logout', async (ctx, next) => {
+  const sessionId = ctx.cookies.get(SESS_CONFIG.key);
+  if(await client.get(sessionId)) {
+    client.del(sessionId);
+    ctx.status = 200;
+    ctx.body = {
+      code: '0',
+      msg: '注销成功'
+    }
+  }else {
+    ctx.status = 200;
+    ctx.body = {
+      code: '401',
+      msg: '用户未登录，请登录！',
+    }
+  }
+});
+
 app
   .use(router.routes())
   .use(router.allowedMethods());
