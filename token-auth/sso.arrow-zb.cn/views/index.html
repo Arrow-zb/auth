@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>sso.arrow-zb.cn</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <link rel="stylesheet" href="./index.css">
+</head>
+
+<body>
+  <div id="app">
+    <el-form :model="ruleForm" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+      <el-form-item label="用户名" prop="username">
+        <el-input type="text" v-model="ruleForm.username" autocomplete="off"></el-input>
+      </el-form-item>
+      <el-form-item label="密码" prop="password">
+        <el-input type="password" v-model="ruleForm.password" autocomplete="off"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="submitForm">提交</el-button>
+      </el-form-item>
+    </el-form>
+  </div>
+</body>
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+  axios.interceptors.request.use(
+    config => {
+      const token = localStorage.getItem("token");
+      if(token) {
+        // token 存在的话，每个 http header 都加上 token
+        config.headers.common["Authorization"] = "Bearer " + token;
+      };
+      return config;
+    },
+    err => {
+      return Promise.reject(err);
+    }
+  );
+  const app = new Vue({
+    el: '#app',
+    data() {
+      return { 
+        ruleForm: {
+          username: '',
+          password: ''
+        }
+       }
+    },
+    methods:{
+      submitForm() {
+        axios.post('/login', {
+          username: this.ruleForm.username,
+          password: this.ruleForm.password
+        })
+        .then(res => {
+          console.log(res);
+          this.$message({
+            message: '登录成功！',
+            type: 'success'
+          });
+          localStorage.setItem("token", res.data.token);
+        })
+        .catch(err => {
+          console.log(err);
+        });
+      }
+    }
+  })
+</script>
+
+</html>
