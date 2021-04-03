@@ -4,39 +4,63 @@ const koaStatic = require('koa-static');
 const bodyParser = require('koa-bodyparser');
 const Router = require('koa-router');
 const router = new Router();
-const jsonwebtoken = require('jsonwebtoken');
-const jwt = require('koa-jwt');
-const SECRET = 'arrow-secret';
+const session = require('koa-session');
+const redis = require('redis');
+const redisStore = require('koa-redis');
+const redisClient = redis.createClient(6379, '10.12.6.144');
+const coRedis = require('co-redis');
 
-const userCollection = {      // 模拟数据库，用户信息
+const client = coRedis(redisClient);
+
+const SECRET = 'arrow-secret';
+app.keys = [SECRET];
+
+// session 配置
+const SESS_CONFIG = {
+  key: 'arrow:sessionId',
+  maxAge: 60 * 60 * 1000,   // 一个小时
+  httpOnly: true,
+  signed: true,
+  store: redisStore({ client }),
+  domain: 'arrow.cn'
+  // https://github.com/koajs/session/issues/188
+}
+
+// 模拟数据库，用户信息
+const userCollection = {      
   'arrow': '123456'
 }
 
 app.use(koaStatic("views"));
 app.use(bodyParser());
-app.use(jwt({ 
-  secret: SECRET,
-  audience: 'arrow-zb.cn',
-  cookie: true 
-}).unless({    // 登录接口不需要验证
-  path: [/\/login/]
-}));
+app.use(session(SESS_CONFIG, app));
+
+app.use(async (ctx, next) => {
+  const keys = await client.keys("*");
+  keys.forEach(async key => {
+    console.log(key, await client.get(key));
+  });
+  await next();
+});
 
 router.post('/login', (ctx, next) => {
   const { username, password } = ctx.request.body;
+  
   if(userCollection[username] && userCollection[username] === password) {
+    // 给 arrow-zb.cn 颁发 session， 以及存储到 redis 中
+    ctx.session.userInfo = userCollection;
+    ctx.status = 200;
     ctx.body = {
-      code: 200,
+      code: '0',
       msg: '登录成功',
-      token: jsonwebtoken.sign(
-        { username: username },  // 加密userToken
-        SECRET,
-        { expiresIn: '1h' }
-      )
-  }
+      data: ctx.query       // 这种方式可以前端重定向，也可以后端 ctx.redirect
+    }
   }else {
-    ctx.status = 401;
-    ctx.body = "用户不存在或者密码错误！";
+    ctx.status = 200;
+    ctx.body = {
+      code: '401',
+      msg: '用户不存在或者密码错误！',
+    }
   }
 });
 

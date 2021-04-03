@@ -22,3 +22,21 @@ docker run -itd --name redis-arrow -p 6379:6379 redis
 docker exec -it redis-arrow /bin/bash
 ```
 [教程](https://www.runoob.com/docker/docker-install-redis.html)
+2. 安装依赖
+```sh
+yarn add redis koa-redis
+```
+3. 简单使用
+```js
+const redis = require('redis');
+const redisStore = require('koa-redis');
+const redisClient = redis.createClient(6379, '10.12.6.144');
+```
+## 3.2 搭建 koa 服务
+```sh
+yarn add koa koa-router koa-static koa-bodyparser koa-session
+```
+
+
+## 3.3 搭建前端页面
+基于 vue, element-ui, axios 搭建前端登录页面
