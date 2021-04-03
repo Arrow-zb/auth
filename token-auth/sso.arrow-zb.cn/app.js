@@ -16,7 +16,7 @@ app.use(koaStatic("views"));
 app.use(bodyParser());
 app.use(jwt({ 
   secret: SECRET,
-  audience: 'arrow-zb.cn',
+  audience: 'arrow.cn',
   cookie: true 
 }).unless({    // 登录接口不需要验证
   path: [/\/login/]
