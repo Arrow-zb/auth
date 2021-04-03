@@ -25,10 +25,16 @@ docker exec -it redis-arrow /bin/bash
 [教程](https://www.runoob.com/docker/docker-install-redis.html)
 
 ### 3.1.2 搭建 koa 服务
-koa 服务中有两个点需要重点注意：
+koa 服务中有三个点需要重点注意：
 - session config 中需要设置 domain, 这里我遇到了坑，官方文档中没提及到可以设置 domain, 后来我是在 git issue 中发现是可以配置的。
+- session 是签名过的，因此 session 的 secret 需要系统共享，可以直接在代码里面写死（每个服务都写一样的），也可以保存在 redis 中进行共享
 - 路由的重定向的 url 是来自 query 的，因此获取到后可以通过后端直接 redirect， 也可以前端重定向
 
 ### 3.1.3 搭建前端页面
 基于 vue, element-ui, axios 搭建前端登录页面。
 这里只做登录，登录完成后直接重定向。
+
+## 3.2 ui.arrow.cn  搭建 ui 项目
+这里主要实现两个功能
+- ui 对应的后台鉴权，如果无 sessionId 或者 sessionId 不匹配，那么带着 url 重定向到 sso.arrow.cn 进行登录
+- sessionId 校验通过后展示用户名字即可

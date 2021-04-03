@@ -48,7 +48,7 @@ router.post('/login', (ctx, next) => {
   
   if(userCollection[username] && userCollection[username] === password) {
     // 给 arrow.cn 颁发 session， 以及存储到 redis 中
-    ctx.session.userInfo = userCollection;
+    ctx.session.userInfo = { username };
     ctx.status = 200;
     ctx.body = {
       code: '0',
