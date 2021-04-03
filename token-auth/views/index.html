@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>sso.arrow.cn</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <link rel="stylesheet" href="./index.css">
+</head>
+
+<body>
+  <div id="app">
+    <el-form :model="ruleForm" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+      <el-form-item label="用户名" prop="username" v-if="!hasLogin">
+        <el-input type="text" v-model="ruleForm.username" autocomplete="off"></el-input>
+      </el-form-item>
+      <el-form-item label="密码" prop="password" v-if="!hasLogin">
+        <el-input type="password" v-model="ruleForm.password" autocomplete="off"></el-input>
+      </el-form-item>
+      <h1 v-if="hasLogin">登录成功！</h1>
+      <h2 v-if="userInfo">{{ userInfo.username }}</h2>
+      <el-form-item>
+        <el-button type="primary" @click="submitForm" v-if="!hasLogin">提交</el-button>
+        <el-button type="primary" @click="getUserInfo" v-if="hasLogin">获取用户信息</el-button>
+        <el-button type="primary" @click="logout" v-if="hasLogin">注销</el-button>
+      </el-form-item>
+    </el-form>
+  </div>
+</body>
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+  axios.interceptors.request.use(
+    config => {
+      const token = localStorage.getItem("token");
+      if(token) {
+        // token 存在的话，每个 http header 都加上 token
+        config.headers.common["Authorization"] = "Bearer " + token;
+      };
+      return config;
+    },
+    err => {
+      return Promise.reject(err);
+    }
+  );
+  const app = new Vue({
+    el: '#app',
+    data() {
+      return { 
+        ruleForm: {
+          username: 'arrow',
+          password: '123456',
+        },
+        userInfo: "",
+        hasLogin: false
+       }
+    },
+    methods:{
+      submitForm() {
+        axios.post('/login', {
+          username: this.ruleForm.username,
+          password: this.ruleForm.password
+        })
+        .then(res => {
+          console.log(res);
+          if(res.data.code === "0") {
+            this.$message({
+              message: '登录成功！',
+              type: 'success'
+            });
+            this.hasLogin = true;
+            localStorage.setItem("token", res.data.token);
+          }else {
+            this.$message({
+              message: res.data.msg,
+              type: 'warning'
+            });
+          }
+        })
+        .catch(err => {
+          console.log(err);
+        });
+      },
+      getUserInfo() {
+        axios.get('/getUserInfo').then(res => {
+          if(res.data.code === '0') {
+            this.userInfo = res.data.data;
+            this.$message({
+              message: '获取成功！',
+              type: 'success'
+            });
+          }else if(res.data.code === '401') {
+            this.hasLogin = false;
+            this.$message({
+              message: "请重新登录！",
+              type: 'warning'
+            });
+          }else {
+            this.$message({
+              message: res.data.msg,
+              type: 'warning'
+            });
+          }
+        }).catch(err => {
+          console.log(err);
+        });
+      },
+      logout() {
+        this.userInfo = "";
+        localStorage.removeItem("token");
+        this.hasLogin = false;
+      }
+    }
+  })
+</script>
+
+</html>
