@@ -20,10 +20,9 @@ const SESS_CONFIG = {
   key: 'arrow:sessionId',
   maxAge: 60 * 60 * 1000,   // 一个小时
   httpOnly: true,
-  signed: true,
-  store: redisStore({ client }),
-  domain: 'arrow.cn'
-  // https://github.com/koajs/session/issues/188
+  signed: false,
+  sameSite: false,
+  store: redisStore({ client })
 }
 
 // 模拟数据库，用户信息
@@ -49,6 +48,9 @@ router.post('/login', (ctx, next) => {
   if(userCollection[username] && userCollection[username] === password) {
     // 给 arrow.cn 颁发 session， 以及存储到 redis 中
     ctx.session.userInfo = { username };
+    // ctx.cookies.set('aa', 'aa', {
+    //   sameSite:
+    // })
     ctx.status = 200;
     ctx.body = {
       code: '0',
@@ -62,6 +64,23 @@ router.post('/login', (ctx, next) => {
       msg: '用户不存在或者密码错误！',
     }
   }
+});
+
+router.get('/check', async (ctx, next) => {
+  const sessionId = ctx.cookies.get(SESS_CONFIG.key);
+  console.log(ctx.href, sessionId);
+  ctx.type = "application/javascript";
+  let res = {
+    code: "401",
+    msg: '您还未登陆，请登录！'
+  };
+  if(sessionId && await client.get(sessionId)) {
+    res = {
+      code: "0",
+      data: sessionId
+    }
+  }
+  ctx.body = `${ctx.query.callback}(${JSON.stringify(res)})`;
 });
 
 router.post('/logout', async (ctx, next) => {
